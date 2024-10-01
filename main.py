@@ -485,6 +485,7 @@ class MemoryAwareStruct(SelectType):
 
     def pop(self, params: SelectType.String_) -> None:
         """Function to delete dictionary with key."""
+        global max_memory_usage
         with self.__data.mainsession:  # Lock saat penghapusan data
             if params in self.__data:
                 #kembalikan ukuran sesuai size dict dipop
@@ -501,6 +502,7 @@ class MemoryAwareStruct(SelectType):
 
     async def async_pop(self, params: SelectType.String_) -> None:
         """Function to delete dictionary with key."""
+        global max_memory_usage
         async with asyncio.Lock():  # Menggunakan Lock saat modifikasi dictionary
             # Kunci lock untuk memastikan hanya satu thread yang dapat mengakses data
             with self.__data.mainsession:  # Lock saat penghapusan data
