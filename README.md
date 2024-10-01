@@ -29,3 +29,16 @@ If you need persistent data storage, then you may need to use another data stora
 ## Disadvantages
 
 1. Not Designed for Persistent Data Storage: MemoryAwareStruct is not designed for persistent data storage, so it cannot be used as a persistent data storage solution.
+
+## Usage
+```
+memory = MemoryAwareStruct()
+memory.insert = {"key2": open("index.py", "rb").read()}
+memory.update = {"key2": ["value2", 1, "ffffffffff"]}
+memory
+memory.get("key2")
+memory.pop("key2")
+memory.insert_function("functions", functions)
+memory.clear()
+```
+
