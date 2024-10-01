@@ -123,18 +123,6 @@ class RestrictedDict:
 memory_warning_triggered: SelectType.Boolean_ = False
 max_memory_usage: SelectType.Numeric_ = 0
 
-
-def MemoryUsage():
-    global max_memory_usage, memory_warning_triggered
-    total_memory = psutil.virtual_memory().total
-    satuan = ["bytes", "KB", "MB", "GB"]
-    i = 0
-    while total_memory >= 1024 and i < len(satuan) - 1:
-        total_memory /= 1024
-        i += 1
-    print(f"Total memory: {total_memory:.2f} {satuan[i]}")
-
-
 def getMemory(total_memory: SelectType.Numeric_) -> SelectType.String_:
     satuan = ["bytes", "KB", "MB", "GB"]
     i = 0
@@ -158,8 +146,6 @@ class MemoryAwareStruct(SelectType):
     def __init__(self, memory_default: int = None, **entries: SelectType.Dict_) -> None:
         global max_memory_usage, memory_warning_triggered
         self.__struct_name = self.__class__.__name__  # Private variable
-        if memory_warning_triggered == False:
-            MemoryUsage()
 
         if memory_default:  # Memisahkan memori instance dari memori global
             self.max_memory_usage: SelectType.Numeric_ = memory_default
