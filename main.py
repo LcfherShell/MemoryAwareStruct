@@ -578,7 +578,6 @@ class MemoryAwareStruct(SelectType):
         """Function to monitor memory."""
         global max_memory_usage, memory_warning_triggered
         while True:
-            time.sleep(2)
             if self.__is_memory_full__():
                 print("Warning: Full memory!")
                 if not self.__get_attribute__("max_memory_usage"):
@@ -588,7 +587,7 @@ class MemoryAwareStruct(SelectType):
                     self.max_memory_usage = 0
             else:
                 max_memory_usage = self.__get_max_allowed_memory__()
-            # Periksa setiap 4 menit
+            # Periksa setiap 2 menit
             threading.Event().wait(120)  # 120 detik atau 2 menit
 
     def __is_memory_full__(self) -> SelectType.Boolean_:
