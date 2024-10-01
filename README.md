@@ -31,6 +31,7 @@ If you need persistent data storage, then you may need to use another data stora
 1. Not Designed for Persistent Data Storage: MemoryAwareStruct is not designed for persistent data storage, so it cannot be used as a persistent data storage solution.
 
 ## Usage
+
 ```
 memory = MemoryAwareStruct()
 memory.insert = {"key2": open("index.py", "rb").read()}
