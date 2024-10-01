@@ -15,21 +15,6 @@ MemoryAwareStruct can be used as temporary data storage, such as:
 2. Session Data: MemoryAwareStruct can be used to store session data that does not need to be stored persistently.
 3. Temporary Data: MemoryAwareStruct can be used to store data that only needs to be stored temporarily.
 
-## Keep in mind
-
-MemoryAwareStruct is not designed for persistent data storage.   
-If you need persistent data storage, then you may need to use another data storage solution, such as a database or file system.
-
-## Advantages
-
-1. Effective Memory Management: MemoryAwareStruct can prevent memory exhaustion and ensure that the stored data does not exceed the specified memory limit.
-2. Secure Multi-Threaded Access: MemoryAwareStruct can be accessed by multiple threads securely, so it can be used in applications that require fast and secure data access.
-3. Effective Data Management: This class features effective data management, making it easy to manage the stored data.
-
-## Disadvantages
-
-1. Not Designed for Persistent Data Storage: MemoryAwareStruct is not designed for persistent data storage, so it cannot be used as a persistent data storage solution.
-
 ## Usage
 
 ```
@@ -45,4 +30,19 @@ memory.pop("key2")
 memory.insert_function("functions", functions)
 memory.clear()
 ```
+
+## Keep in mind
+
+MemoryAwareStruct is not designed for persistent data storage.   
+If you need persistent data storage, then you may need to use another data storage solution, such as a database or file system.
+
+## Advantages
+
+1. Effective Memory Management: MemoryAwareStruct can prevent memory exhaustion and ensure that the stored data does not exceed the specified memory limit.
+2. Secure Multi-Threaded Access: MemoryAwareStruct can be accessed by multiple threads securely, so it can be used in applications that require fast and secure data access.
+3. Effective Data Management: This class features effective data management, making it easy to manage the stored data.
+
+## Disadvantages
+
+1. Not Designed for Persistent Data Storage: MemoryAwareStruct is not designed for persistent data storage, so it cannot be used as a persistent data storage solution.
 
