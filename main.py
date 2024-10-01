@@ -566,13 +566,14 @@ class MemoryAwareStruct(SelectType):
         ):
             self.max_memory_usage = self.max_memory_usage * 1.024
             self.passessionX = 1
-        if not self.__get_attribute__("max_memory_usage"):
-            nu = 0
-        else:
-            nu = self.max_memory_usage + memory_dict_size
-        return round(
-            (((memory_info.total * 0.75) - round(memory_dict_size)) - nu) * 1.024
-        )
+        # Calculate nu based on max_memory_usage
+        nu = self.__get_attribute__('max_memory_usage', 0) + memory_dict_size
+        # Calculate the maximum allowed memory
+        max_allowed_memory = ((memory_info.total * 0.75) - round(memory_dict_size)) - nu
+        return round(max_allowed_memory * 1.024)
+        #return round(
+            #(((memory_info.total * 0.75) - round(memory_dict_size)) - nu) * 1.024
+        #)
 
     def __monitor_memory__(self) -> None:
         """Function to monitor memory."""
@@ -655,9 +656,9 @@ class MemoryAwareStruct(SelectType):
             return self.memory_warning_triggered
         return memory_warning_triggered
 
-    def __get_attribute__(self, attr_name: SelectType.String_):
+    def __get_attribute__(self, attr_name: SelectType.String_, valuedef:SelectType.Any_=None):
         # Menggunakan getattr untuk mendapatkan atribut dengan nama yang diberikan
-        return getattr(self, attr_name, None)
+        return getattr(self, attr_name, valuedef)
 
     def __can_insert_or_update__(self, size_to_add):
         """Function to check if we can insert or update based on memory limits."""
