@@ -33,6 +33,9 @@ If you need persistent data storage, then you may need to use another data stora
 ## Usage
 
 ```
+def functions():
+    return 3
+
 memory = MemoryAwareStruct()
 memory.insert = {"key2": open("index.py", "rb").read()}
 memory.update = {"key2": ["value2", 1, "ffffffffff"]}
