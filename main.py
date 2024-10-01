@@ -487,6 +487,13 @@ class MemoryAwareStruct(SelectType):
         """Function to delete dictionary with key."""
         with self.__data.mainsession:  # Lock saat penghapusan data
             if params in self.__data:
+                #kembalikan ukuran sesuai size dict dipop
+                curentsize_old = self.__get_total_size__(self.__data[params])
+                if not self.__get_attribute__("max_memory_usage"):
+                    max_memory_usage += curentsize_old
+                else:
+                    self.max_memory_usage += curentsize_old
+                    max_memory_usage += self.max_memory_usage
                 self.__data.pop(params)  # Menggunakan pop dari RestrictedDict
                 print("success")
             else:
@@ -498,7 +505,15 @@ class MemoryAwareStruct(SelectType):
             # Kunci lock untuk memastikan hanya satu thread yang dapat mengakses data
             with self.__data.mainsession:  # Lock saat penghapusan data
                 if params in self.__data:
-                    await asyncio.sleep(1)  # Simulasi penundaan untuk operasi asinkron
+                    await asyncio.sleep(1)  # Simulasi penundaan untuk operasi asinkro
+                    
+                    #kembalikan ukuran sesuai size dict dipop
+                    curentsize_old = self.__get_total_size__(self.__data[params])
+                    if not self.__get_attribute__("max_memory_usage"):
+                        max_memory_usage += curentsize_old
+                    else:
+                        self.max_memory_usage += curentsize_old 
+                        max_memory_usage += self.max_memory_usage 
                     self.__data.pop(params)  # Menggunakan pop dari RestrictedDict
                     print("success")
                 else:
