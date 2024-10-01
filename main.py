@@ -5,13 +5,13 @@ import re
 import psutil
 import asyncio
 import time
-import struct as st
 import signal
 
 try:
     import resource
 except:
     resource = None
+import ctypes
 import os
 
 version = int(str(sys.version_info.major) + str(sys.version_info.minor))
@@ -38,14 +38,6 @@ else:
         Numeric_ = Union[int, float]
         Boolean_ = bool
         List_ = Union[list, tuple]
-
-
-def float_to_hex(f):
-    return hex(st.unpack("<I", st.pack("<f", f))[0])
-
-
-def hex_to_float(h):
-    return st.unpack("<f", st.pack("<I", int(h, 16)))[0]
 
 
 class RestrictedDict:
@@ -106,6 +98,9 @@ class RestrictedDict:
         for key, value in other.items():
             self[key] = value  # Use __setitem__ for restrictions
 
+    def clear(self):
+        self._data.clear()
+
     def __repr__(self) -> SelectType.String_:
         return f"{self._data}"
 
@@ -129,6 +124,26 @@ memory_warning_triggered: SelectType.Boolean_ = False
 max_memory_usage: SelectType.Numeric_ = 0
 
 
+def MemoryUsage():
+    global max_memory_usage, memory_warning_triggered
+    total_memory = psutil.virtual_memory().total
+    satuan = ["bytes", "KB", "MB", "GB"]
+    i = 0
+    while total_memory >= 1024 and i < len(satuan) - 1:
+        total_memory /= 1024
+        i += 1
+    print(f"Total memory: {total_memory:.2f} {satuan[i]}")
+
+
+def getMemory(total_memory: SelectType.Numeric_) -> SelectType.String_:
+    satuan = ["bytes", "KB", "MB", "GB"]
+    i = 0
+    while total_memory >= 1024 and i < len(satuan) - 1:
+        total_memory /= 1024
+        i += 1
+    return satuan[i]
+
+
 class MemoryAwareStruct(SelectType):
     """The MemoryAwareStruct class is designed to handle data in dictionaries with a memory-safe approach and multi-threaded access."""
 
@@ -143,6 +158,8 @@ class MemoryAwareStruct(SelectType):
     def __init__(self, memory_default: int = None, **entries: SelectType.Dict_) -> None:
         global max_memory_usage, memory_warning_triggered
         self.__struct_name = self.__class__.__name__  # Private variable
+        if memory_warning_triggered == False:
+            MemoryUsage()
 
         if memory_default:  # Memisahkan memori instance dari memori global
             self.max_memory_usage: SelectType.Numeric_ = memory_default
@@ -164,10 +181,6 @@ class MemoryAwareStruct(SelectType):
             #    max_memory_usage = max_memory_usage - self.max_memory_usage
             # elif max_memory_usage<=0:
             #    max_memory_usage = self.__get_max_allowed_memory__() - self.max_memory_usage
-
-        # Memulai thread untuk memantau penggunaan memori
-        monitor_thread = threading.Thread(target=self.__monitor_memory__, daemon=True)
-        monitor_thread.start()
 
     def __setattr__(self, name: SelectType.String_, value: SelectType.Any_) -> None:
         if name in ["__dict__"]:
@@ -235,8 +248,10 @@ class MemoryAwareStruct(SelectType):
 
                 # Hitung memori total setelah insert
                 potential_used_memory = current_dict_size + new_dict_size
+                time.sleep(0.3)
                 if (
-                    not self.__is_memory_full__()
+                    self.__h_Data__()
+                    and not self.__is_memory_full__()
                     and potential_used_memory < self.__check__()
                     and not self.__check_memory_warning_triggered__()
                 ):
@@ -247,7 +262,6 @@ class MemoryAwareStruct(SelectType):
                             old_value_size = sys.getsizeof(old_value)
                             self.__data[key] = dict_new[key]  # Gunakan RestrictedDict
                             new_value_size = sys.getsizeof(dict_new[key])
-
                             # Jika instance tidak memiliki batas memori, gunakan batas memori global
                             if not self.__get_attribute__("max_memory_usage"):
                                 max_memory_usage = self.__get_max_allowed_memory__()
@@ -281,9 +295,10 @@ class MemoryAwareStruct(SelectType):
 
                     # Hitung memori total setelah update
                     potential_used_memory = current_dict_size + new_dict_size
-
+                    time.sleep(0.3)
                     if (
-                        not self.__is_memory_full__()
+                        self.__h_Data__()
+                        and not self.__is_memory_full__()
                         and potential_used_memory < self.__check__()
                         and not self.__check_memory_warning_triggered__()
                     ) and self.__can_insert_or_update__(new_dict_size):
@@ -340,8 +355,10 @@ class MemoryAwareStruct(SelectType):
 
                 # Hitung memori total setelah insert
                 potential_used_memory = current_dict_size + new_dict_size
+                time.sleep(0.3)
                 if (
-                    not self.__is_memory_full__()
+                    self.__h_Data__()
+                    and not self.__is_memory_full__()
                     and potential_used_memory < self.__check__()
                     and not self.__check_memory_warning_triggered__()
                 ) and self.__can_insert_or_update__(new_dict_size):
@@ -375,8 +392,10 @@ class MemoryAwareStruct(SelectType):
 
                     # Hitung memori total setelah insert
                     potential_used_memory = current_dict_size + new_dict_size
+                    time.sleep(0.3)
                     if (
-                        not self.__is_memory_full__()
+                        self.__h_Data__()
+                        and not self.__is_memory_full__()
                         and potential_used_memory < self.__check__()
                         and not self.__check_memory_warning_triggered__()
                     ) and self.__can_insert_or_update__(new_dict_size):
@@ -415,8 +434,10 @@ class MemoryAwareStruct(SelectType):
 
                 # Hitung memori total setelah insert
                 potential_used_memory = current_dict_size + new_dict_size
+                time.sleep(0.3)
                 if (
-                    not self.__is_memory_full__()
+                    self.__h_Data__()
+                    and not self.__is_memory_full__()
                     and potential_used_memory < self.__check__()
                     and not self.__check_memory_warning_triggered__()
                 ) and self.__can_insert_or_update__(new_dict_size):
@@ -453,8 +474,10 @@ class MemoryAwareStruct(SelectType):
 
                     # Hitung memori total setelah insert
                     potential_used_memory = current_dict_size + new_dict_size
+                    time.sleep(0.3)
                     if (
-                        not self.__is_memory_full__()
+                        self.__h_Data__()
+                        and not self.__is_memory_full__()
                         and potential_used_memory < self.__check__()
                         and not self.__check_memory_warning_triggered__()
                     ) and self.__can_insert_or_update__(new_dict_size):
@@ -488,8 +511,9 @@ class MemoryAwareStruct(SelectType):
         global max_memory_usage
         with self.__data.mainsession:  # Lock saat penghapusan data
             if params in self.__data:
-                #kembalikan ukuran sesuai size dict dipop
+                # kembalikan ukuran sesuai size dict dipop
                 curentsize_old = self.__get_total_size__(self.__data[params])
+                time.sleep(0.3)
                 if not self.__get_attribute__("max_memory_usage"):
                     max_memory_usage += curentsize_old
                 else:
@@ -508,18 +532,26 @@ class MemoryAwareStruct(SelectType):
             with self.__data.mainsession:  # Lock saat penghapusan data
                 if params in self.__data:
                     await asyncio.sleep(1)  # Simulasi penundaan untuk operasi asinkro
-                    
-                    #kembalikan ukuran sesuai size dict dipop
+
+                    # kembalikan ukuran sesuai size dict dipop
                     curentsize_old = self.__get_total_size__(self.__data[params])
                     if not self.__get_attribute__("max_memory_usage"):
                         max_memory_usage += curentsize_old
                     else:
-                        self.max_memory_usage += curentsize_old 
+                        self.max_memory_usage += curentsize_old
                         max_memory_usage += curentsize_old
                     self.__data.pop(params)  # Menggunakan pop dari RestrictedDict
                     print("success")
                 else:
                     print("failed")
+
+    def clear(self):
+        time.sleep(1.3)
+        self.__data.clear()
+
+    def reset(self):
+        time.sleep(0.4)
+        self.__data.clear()
 
     def execute_function(
         self, key: SelectType.String_, *args, **kwargs
@@ -567,29 +599,13 @@ class MemoryAwareStruct(SelectType):
             self.max_memory_usage = self.max_memory_usage * 1.024
             self.passessionX = 1
         # Calculate nu based on max_memory_usage
-        nu = self.__get_attribute__('max_memory_usage', 0) + memory_dict_size
+        nu = self.__get_attribute__("max_memory_usage", 0) + memory_dict_size
         # Calculate the maximum allowed memory
         max_allowed_memory = ((memory_info.total * 0.75) - round(memory_dict_size)) - nu
         return round(max_allowed_memory * 1.024)
-        #return round(
-            #(((memory_info.total * 0.75) - round(memory_dict_size)) - nu) * 1.024
-        #)
-
-    def __monitor_memory__(self) -> None:
-        """Function to monitor memory."""
-        global max_memory_usage, memory_warning_triggered
-        while True:
-            if self.__is_memory_full__():
-                print("Warning: Full memory!")
-                if not self.__get_attribute__("max_memory_usage"):
-                    memory_warning_triggered = True
-                else:
-                    self.memory_warning_triggered = True
-                    self.max_memory_usage = 0
-            else:
-                max_memory_usage = self.__get_max_allowed_memory__()
-            # Periksa setiap 2 menit
-            threading.Event().wait(120)  # 120 detik atau 2 menit
+        # return round(
+        # (((memory_info.total * 0.75) - round(memory_dict_size)) - nu) * 1.024
+        # )
 
     def __is_memory_full__(self) -> SelectType.Boolean_:
         """Check if the memory is full."""
@@ -645,18 +661,32 @@ class MemoryAwareStruct(SelectType):
         return total_size
 
     def __check__(self):
-        """Mengembalikan sisa memori yang diizinkan."""
+        """Restores the remaining allowed memory."""
         if self.__get_attribute__("max_memory_usage"):
             return self.max_memory_usage
         return max_memory_usage
 
     def __check_memory_warning_triggered__(self):
-        """Memeriksa apakah peringatan memori telah dipicu."""
+        """Checks whether a memory warning has been triggered."""
         if self.__get_attribute__("max_memory_usage"):
             return self.memory_warning_triggered
         return memory_warning_triggered
 
-    def __get_attribute__(self, attr_name: SelectType.String_, valuedef:SelectType.Any_=None):
+    def __h_Data__(self):
+        sizemax = self.__check__()
+        getmeterBytes = getMemory(sizemax)
+        if getmeterBytes in ["bytes", "KB"]:
+            if getmeterBytes in ["KB"] and sizemax <= 120:
+                return False
+            elif getmeterBytes in ["bytes"]:
+                return False
+            else:
+                return True
+        return True
+
+    def __get_attribute__(
+        self, attr_name: SelectType.String_, valuedef: SelectType.Any_ = None
+    ):
         # Menggunakan getattr untuk mendapatkan atribut dengan nama yang diberikan
         return getattr(self, attr_name, valuedef)
 
@@ -671,63 +701,27 @@ class MemoryAwareStruct(SelectType):
         print("Exiting program...")
         sys.exit(0)
 
-    def set_max_runtime(self, seconds):
-        signal.signal(signal.SIGABRT, self.exit_handler)
-        signal.alarm(seconds)
+    def set_max_runtime(self, seconds: int) -> None:
+        if sys.platform == "win32":
+            # Windows
+            timer = threading.Timer(seconds, self.exit_handler)
+            timer.start()
+        else:
+            # Linux
+            signal.signal(signal.SIGALRM, self.exit_handler)
+            signal.alarm(seconds)
 
-    def set_max_memory_usage(self, megabytes):
-        if resource:
-            soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-            resource.setrlimit(resource.RLIMIT_AS, (megabytes * 1024 * 1024, hard))
+    def set_max_memory_usage(self, megabytes: SelectType.Numeric_):
+        if sys.platform == "win32":
+            # Windows
+            ctypes.cdll.msvcrt.setlimit(ctypes.c_int(2), megabytes * 1024 * 1024)
+        else:
+            # Linux
+            resource.setrlimit(
+                resource.RLIMIT_AS, (megabytes * 1024 * 1024, megabytes * 1024 * 1024)
+            )
 
 
-# Perbaiki jika user mengisi memory_default maka memoeri total kurangi, lalu jika user menginsert, update data maka perbarui memory_default dan jika memory_default 0 atau - maka tolak akses update atau insert
-#
+
 # method chaining
 __all__ = ["MemoryAwareStruct"]
-
-# Fungsi utama untuk menjalankan asinkronitas
-struct = MemoryAwareStruct(key1="initial_value")
-struct1 = MemoryAwareStruct(memory_default=399, key1="initial_value")
-
-
-def functions():
-    return 3
-
-
-async def main():
-    # Coba insert data baru secara asinkron
-    await struct.async_insert({"key2": open("index.py", "rb").read()})
-
-    # Coba update data yang ada secara asinkron
-    await struct.async_update({"key2": ["value2", 1, "ffffffffff"]})
-
-    # Coba update key yang tidak ada
-    await struct.async_update({"key3": "value3"})
-
-    await struct.async_insert_function("functions", functions)
-    # Coba insert key baru setelah gagal update
-    await struct.async_insert({"key3": "value3"})
-
-
-async def main2():
-    await struct1.async_insert({"key2": open("index.py", "rb").read()})
-    # Coba update data yang ada secara asinkron
-    await struct1.async_update({"key2": ["value2", 1, "ffffffffff"]})
-    # Coba update key yang tidak ada
-    await struct1.async_update({"key3": "value3"})
-
-    await struct1.async_insert_function("functions", functions)
-    # Coba insert key baru setelah gagal update
-    await struct1.async_insert({"key3": "value3"})
-
-
-# Contoh penggunaan
-if __name__ == "__main__":
-    asyncio.run(main())
-    print("\n\nData 2:")
-    asyncio.run(main2())
-    print(struct.json())
-    print(struct1.json())
-    # struct.set_max_runtime(10)  # Batas waktu 10 detik
-    # struct.set_max_memory_usage(1024)  # Batas memori 1 GB
