@@ -494,7 +494,7 @@ class MemoryAwareStruct(SelectType):
                     max_memory_usage += curentsize_old
                 else:
                     self.max_memory_usage += curentsize_old
-                    max_memory_usage += self.max_memory_usage
+                    max_memory_usage += curentsize_old
                 self.__data.pop(params)  # Menggunakan pop dari RestrictedDict
                 print("success")
             else:
@@ -515,7 +515,7 @@ class MemoryAwareStruct(SelectType):
                         max_memory_usage += curentsize_old
                     else:
                         self.max_memory_usage += curentsize_old 
-                        max_memory_usage += self.max_memory_usage 
+                        max_memory_usage += curentsize_old
                     self.__data.pop(params)  # Menggunakan pop dari RestrictedDict
                     print("success")
                 else:
