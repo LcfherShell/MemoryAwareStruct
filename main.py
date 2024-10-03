@@ -39,6 +39,45 @@ else:
         Boolean_ = bool
         List_ = Union[list, tuple]
 
+class AwareData:
+    def __init__(self, entries: Union[Dict[str, Any], Any]):
+        """Initialize AwareData with the provided entries.
+
+        Args:
+            entries (Union[Dict[str, Any], Any]): A dictionary of initial entries 
+            or a single value (int or str).
+        """
+        self._data = entries
+    
+    def __setitem__(self, key: str, value: Any) -> None:
+        """Block direct modification of the data.
+
+        Raises:
+            AttributeError: If an attempt is made to modify the data.
+        """
+        raise AttributeError(
+            "Direct modification is not allowed. Use the update() method."
+        )
+    
+    def __delitem__(self, key: str) -> None:
+        """Block direct deletion of the data.
+
+        Raises:
+            AttributeError: If an attempt is made to delete an item from the data.
+        """
+        raise AttributeError("Direct deletion is not allowed. Use the update() method.")
+    
+    def __dir__(self):
+        """Block the dir() function.
+
+        Raises:
+            AttributeError: If dir() is called on this class.
+        """
+        raise AttributeError("The use of dir() on this class is not allowed.")
+    
+    def __repr__(self):
+        """Return a string representation of the stored data."""
+        return repr(self._data)
 
 class ReadOnlyJSON:
     def __init__(self, initial_data: SelectType.Any_) -> None:
@@ -334,6 +373,7 @@ class MemoryAwareStruct(SelectType):
         with self.__data.mainsession:  # Lock saat akses
             return self.__struct_name
 
+    
     def set_name(self, params: SelectType.String_) -> None:
         """
         Function to set the name of the structure.
@@ -359,6 +399,7 @@ class MemoryAwareStruct(SelectType):
             else:
                 raise ValueError("Struct name can only be set once.")
 
+    
     def get(
         self, key: SelectType.String_, default: SelectType.Any_ = None
     ) -> SelectType.Any_:
@@ -379,12 +420,16 @@ class MemoryAwareStruct(SelectType):
             - Utilizes a lock (`self.__data.mainsession`) to ensure thread-safe access when reading data.
         """
         with self.__data.mainsession:  # Lock saat membaca data
-            return self.__data.get(key, default)
-
+            data = self.__data.get(key, default)
+            if  isinstance(data, (dict)):
+                return AwareData(data)
+            return data
+    
     @property
     def update(self) -> None:
         pass
 
+    
     @update.setter
     def update(self, dict_new: SelectType.Dict_) -> None:
         """
@@ -412,7 +457,7 @@ class MemoryAwareStruct(SelectType):
 
                 # Hitung memori total setelah insert
                 potential_used_memory = current_dict_size + new_dict_size
-                time.sleep(0.3)
+                time.sleep(0.001)
                 if (
                     self.__h_Data__()
                     and not self.__is_memory_full__()
@@ -451,6 +496,7 @@ class MemoryAwareStruct(SelectType):
         else:
             raise TypeError("Not Type Dict Error")
 
+   
     async def async_update(self, dict_new: SelectType.Dict_) -> None:
         """
         Asynchronous function to update values in the dictionary based on the provided new dictionary.
@@ -480,7 +526,7 @@ class MemoryAwareStruct(SelectType):
 
                     # Hitung memori total setelah update
                     potential_used_memory = current_dict_size + new_dict_size
-                    time.sleep(0.3)
+                    time.sleep(0.001)
                     if (
                         self.__h_Data__()
                         and not self.__is_memory_full__()
@@ -528,7 +574,8 @@ class MemoryAwareStruct(SelectType):
     @property
     def insert(self):
         pass
-
+    
+    
     @insert.setter
     def insert(self, dict_new: SelectType.Dict_) -> None:
         """
@@ -556,7 +603,7 @@ class MemoryAwareStruct(SelectType):
 
                 # Hitung memori total setelah insert
                 potential_used_memory = current_dict_size + new_dict_size
-                time.sleep(0.3)
+                time.sleep(0.001)
                 if (
                     self.__h_Data__()
                     and not self.__is_memory_full__()
@@ -581,6 +628,7 @@ class MemoryAwareStruct(SelectType):
         else:
             raise TypeError("Not Type Dict Error")
 
+   
     async def async_insert(self, dict_new: SelectType.Dict_) -> None:
         """
         Asynchronous function to insert values into the dictionary based on the provided new dictionary.
@@ -609,7 +657,7 @@ class MemoryAwareStruct(SelectType):
 
                     # Hitung memori total setelah insert
                     potential_used_memory = current_dict_size + new_dict_size
-                    time.sleep(0.3)
+                    time.sleep(0.001)
                     if (
                         self.__h_Data__()
                         and not self.__is_memory_full__()
@@ -641,6 +689,7 @@ class MemoryAwareStruct(SelectType):
         else:
             raise TypeError("Not Type Dict Error")
 
+    
     def insert_function(self, key: SelectType.String_, func: SelectType.Any_) -> None:
         """
         Function to insert a callable function into the dictionary, with memory usage checks.
@@ -675,7 +724,7 @@ class MemoryAwareStruct(SelectType):
 
                 # Hitung memori total setelah insert
                 potential_used_memory = current_dict_size + new_dict_size
-                time.sleep(0.3)
+                time.sleep(0.001)
                 if (
                     self.__h_Data__()
                     and not self.__is_memory_full__()
@@ -701,6 +750,7 @@ class MemoryAwareStruct(SelectType):
         else:
             raise TypeError("The parameter must be a callable function.")
 
+   
     async def async_insert_function(
         self, key: SelectType.String_, func: SelectType.Any_
     ) -> None:
@@ -719,7 +769,7 @@ class MemoryAwareStruct(SelectType):
             - Calculates the potential memory usage after insertion and checks if it is below the allowed memory threshold.
             - If memory usage is within the limit, the function is inserted into the dictionary.
             - If memory exceeds the limit, a memory warning is triggered and the insertion is prevented.
-            - Simulates asynchronous operation with `await asyncio.sleep(1)`.
+            - Simulates asynchronous operation with `await asyncio.sleep(0.001)`.
 
         Raises:
             TypeError: If `func` is not a callable function.
@@ -734,7 +784,7 @@ class MemoryAwareStruct(SelectType):
 
                     # Hitung memori total setelah insert
                     potential_used_memory = current_dict_size + new_dict_size
-                    time.sleep(0.3)
+                    time.sleep(0.001)
                     if (
                         self.__h_Data__()
                         and not self.__is_memory_full__()
@@ -766,6 +816,7 @@ class MemoryAwareStruct(SelectType):
         else:
             raise TypeError("Not Type Dict Error")
 
+    
     def pop(self, params: SelectType.String_) -> None:
         """
         Function to remove a key from the dictionary, adjusting memory usage accordingly.
@@ -786,7 +837,7 @@ class MemoryAwareStruct(SelectType):
             if params in self.__data:
                 # kembalikan ukuran sesuai size dict dipop
                 curentsize_old = self.__get_total_size__(self.__data[params])
-                time.sleep(0.3)
+                time.sleep(0.001)
                 if not self.__get_attribute__("max_memory_usage"):
                     max_memory_usage += curentsize_old
                 else:
@@ -798,13 +849,14 @@ class MemoryAwareStruct(SelectType):
             else:
                 print("failed")
 
+   
     async def async_pop(self, params: SelectType.String_) -> None:
         """
         Asynchronous function to remove an item from the dictionary based on the given key.
 
         - This function uses an `self.__data.mainsession` to ensure that the dictionary is modified in a thread-safe manner.
         - If the key exists in the dictionary, it removes the item and adjusts the memory usage accordingly.
-        - The function simulates a delay using `asyncio.sleep(1)` to represent asynchronous operations.
+        - The function simulates a delay using `asyncio.sleep(0.001)` to represent asynchronous operations.
 
         Args:
             params (SelectType.String_): The key of the item to be removed from the dictionary.
@@ -820,7 +872,7 @@ class MemoryAwareStruct(SelectType):
             # Kunci lock untuk memastikan hanya satu thread yang dapat mengakses data
             with self.__data.mainsession:  # Lock saat penghapusan data
                 if params in self.__data:
-                    await asyncio.sleep(1)  # Simulasi penundaan untuk operasi asinkro
+                    await asyncio.sleep(0.001)  # Simulasi penundaan untuk operasi asinkro
 
                     # kembalikan ukuran sesuai size dict dipop
                     curentsize_old = self.__get_total_size__(self.__data[params])
@@ -835,26 +887,28 @@ class MemoryAwareStruct(SelectType):
                 else:
                     print("failed")
 
+    
     def clear(self):
         """
         Function to clear all items from the dictionary.
 
         - This function uses a lock (`self.__data.mainsession`) to ensure that only one thread can clear the dictionary at a time.
-        - Introduces a delay of 0.6 seconds to simulate the clearing operation.
+        - Introduces a delay of 0.06 seconds to simulate the clearing operation.
 
         Behavior:
             - Acquires the `self.__data.mainsession` lock to prevent simultaneous access to the dictionary.
             - Clears all items from the dictionary using the `clear` method of `RestrictedDict`.
         """
         with self.__data.mainsession:  # Lock saat penghapusan data
-            time.sleep(0.6)
+            time.sleep(0.06)
             self.__data.clear()
 
+    
     def reset(self):
         """
         Function to reset the dictionary by clearing all items.
 
-        - Similar to `clear()`, but uses a shorter delay of 0.2 seconds to simulate a faster operation.
+        - Similar to `clear()`, but uses a shorter delay of 0.05 seconds to simulate a faster operation.
         - This function also locks the dictionary during the reset operation to ensure thread safety.
 
         Behavior:
@@ -862,9 +916,10 @@ class MemoryAwareStruct(SelectType):
             - Clears the dictionary using the `clear` method, effectively resetting it.
         """
         with self.__data.mainsession:  # Lock saat penghapusan data
-            time.sleep(0.2)
+            time.sleep(0.001)
             self.__data.clear()
 
+    
     def execute_function(
         self, key: SelectType.String_, *args, **kwargs
     ) -> SelectType.Any_:
@@ -981,7 +1036,7 @@ class MemoryAwareStruct(SelectType):
         # Calculate nu based on max_memory_usage
         nu = self.__get_attribute__("max_memory_usage", 0) + memory_dict_size
         # Calculate the maximum allowed memory
-        max_allowed_memory = ((memory_info.total * 0.75) - round(memory_dict_size)) - nu
+        max_allowed_memory = (memory_info.total * 0.75) - round(memory_dict_size) - nu
         return round(max_allowed_memory * 1.024)
         # return round(
         # (((memory_info.total * 0.75) - round(memory_dict_size)) - nu) * 1.024
@@ -1014,31 +1069,32 @@ class MemoryAwareStruct(SelectType):
 
         total_size = 0
         seen = set()
-        obj_id = id(data)
-        seen.add(obj_id)
-        obj_size = sys.getsizeof(data)
-        total_size += obj_size
-        if hasattr(data, "__dict__"):
-            for key, val in data.__dict__.items():
-                val_id = id(val)
-                if val_id not in seen:
-                    seen.add(val_id)
-                    total_size += self.__get_total_size__(val)
+        
+        # Recursive inner function to help with caching
+        def _recursive_size(obj):
+            if id(obj) in seen:
+                return 0
+            seen.add(id(obj))
+            obj_size = sys.getsizeof(obj)
+            size = obj_size
+            
+            if hasattr(obj, "__dict__"):
+                for val in obj.__dict__.values():
+                    size += _recursive_size(val)
 
-        elif hasattr(data, "__iter__"):
-            if hasattr(data, "keys"):  # for dictionary
-                for key in data:
-                    val_id = id(data[key])
-                    if val_id not in seen:
-                        seen.add(val_id)
-                        total_size += self.__get_total_size__(data[key])
-            elif not isinstance(data, str):  # Other iterable, not string
-                for item in data:
-                    item_id = id(item)
-                    if item_id not in seen:
-                        seen.add(item_id)
-                        total_size += self.__get_total_size__(item)
+            elif hasattr(obj, "__iter__"):
+                if hasattr(obj, "keys"):  # for dictionary
+                    for key in obj:
+                        size += _recursive_size(obj[key])
+                elif not isinstance(obj, str):  # Other iterable, not string
+                    for item in obj:
+                        size += _recursive_size(item)
+
+            return size
+
+        total_size = _recursive_size(data)
         return total_size
+
 
     def __check_max_memory_usage__(self):
         """Restores the remaining allowed memory."""
@@ -1081,6 +1137,7 @@ class MemoryAwareStruct(SelectType):
         print("Exiting program...")
         sys.exit(0)
 
+    
     def set_max_runtime(self, seconds: SelectType.Numeric_) -> None:
         """
         Set a maximum runtime for the program. After the specified time (in seconds) has passed,
@@ -1095,6 +1152,7 @@ class MemoryAwareStruct(SelectType):
             signal.signal(signal.SIGALRM, self.exit_handler)
             signal.alarm(seconds)
 
+    
     def set_max_memory_usage(self, megabytes: SelectType.Numeric_):
         """
         Set a maximum memory usage limit for the program, specified in megabytes. If the program
