@@ -169,7 +169,7 @@ class MemoryAwareStruct(SelectType):
             #    max_memory_usage = self.__get_max_allowed_memory__() - self.max_memory_usage
 
     def __setattr__(self, name: SelectType.String_, value: SelectType.Any_) -> None:
-        if name in ["__dict__"]:
+        if name in ["__dict__"] or not name in self.__data:
             raise AttributeError(
                 f"Direct updates to '{name}' are not allowed. Please use insert or update."
             )
