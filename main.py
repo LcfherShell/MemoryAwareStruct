@@ -421,7 +421,7 @@ class MemoryAwareStruct(SelectType):
         """
         with self.__data.mainsession:  # Lock saat membaca data
             data = self.__data.get(key, default)
-            if  isinstance(data, (dict)):
+            if  isinstance(data, (dict, tuple, list)):
                 return AwareData(data)
             return data
     
