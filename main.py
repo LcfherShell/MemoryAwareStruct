@@ -13,6 +13,8 @@ except:
     resource = None
 import ctypes
 import os
+from collections import OrderedDict
+
 
 version = int(str(sys.version_info.major) + str(sys.version_info.minor))
 if version > 39:
@@ -44,8 +46,8 @@ class RestrictedDict:
     """A dictionary that restricts certain keys and only allows specific operations."""
 
     def __init__(self, **entries: SelectType.Dict_):
-        self._data = {}
-        self.mainsession = {}
+        self._data = OrderedDict()
+        self.mainsession = OrderedDict()
         for key, value in entries.items():
             if not self.is_restricted(key):
                 self._data[key] = value
