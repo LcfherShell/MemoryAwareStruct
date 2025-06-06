@@ -60,10 +60,40 @@ def smart_list_to_dict(data):
       - [{"key": value}]
       - ["key", value, {"key2": val2}]
       - [{"key": [ {"nested": val}, ... ] }, value]
+    
+    Rules:
+    - Only process string keys that are valid (no dots, no starting with digits)
+    - Keep flat lists as-is if they don't contain nested structures
+    - For key-value pairs, only process if conditions are met
     """
+    if not isinstance(data, list) or not data:
+        return {}
+        
     result = {}
     i = 0
     length = len(data)
+
+    def is_valid_key(item):
+        """Validate if item can be a dictionary key"""
+        if not isinstance(item, str):
+            return False
+        if not item.strip():  # Empty string
+            return False
+        if item[0].isdigit():  # Starts with digit
+            return False
+        if '.' in item:  # Contains dot
+            return False
+        return True
+
+    def add_to_result(key, value):
+        """Helper to handle duplicate keys"""
+        clean_key = replace_special_chars(str(key))
+        if clean_key in result:
+            if not isinstance(result[clean_key], list):
+                result[clean_key] = [result[clean_key]]
+            result[clean_key].append(value)
+        else:
+            result[clean_key] = value
 
     while i < length:
         item = data[i]
@@ -71,36 +101,41 @@ def smart_list_to_dict(data):
         if isinstance(item, dict):
             # Kasus dict langsung, gabungkan key-nya
             for k, v in item.items():
-                key = replace_special_chars(str(k))
-                if key in result:
-                    # Jadikan list jika duplikat
-                    if not isinstance(result[key], list):
-                        result[key] = [result[key]]
-                    result[key].append(v)
-                else:
-                    result[key] = v
+                if is_valid_key(str(k)):  # Validate dict keys too
+                    add_to_result(k, v)
             i += 1
 
         elif isinstance(item, list):
-            # Jika list dalam list: konversi rekursif
-            sub_dict = smart_list_to_dict(item)
-            result.update(sub_dict)
+            # Check if list contains nested structures (dict or list)
+            has_nested = any(isinstance(x, (dict, list)) for x in item)
+            
+            if has_nested:
+                # Process nested structures recursively
+                sub_dict = smart_list_to_dict(item)
+                if sub_dict:  # Only update if conversion was successful
+                    result.update(sub_dict)
+            else:
+                # Flat list - check if it's part of key-value pattern
+                if i > 0 and is_valid_key(str(data[i-1])):
+                    # Previous item might be a key for this list
+                    pass  # Will be handled by key-value logic
+                else:
+                    # Standalone flat list - keep as is with generated key
+                    add_to_result(f"list_{i}", item)
             i += 1
 
-        elif isinstance(item, str) and (i + 1 < length):
-            # Pola ["key", value]
-            key = replace_special_chars(item)
-            val = data[i + 1]
-            if key in result:
-                if not isinstance(result[key], list):
-                    result[key] = [result[key]]
-                result[key].append(val)
-            else:
-                result[key] = val
+        elif is_valid_key(item) and (i + 1 < length):
+            # Valid key pattern - check next item
+            key = item
+            next_item = data[i + 1]
+            
+            # Always treat valid string key + next item as key-value pair
+            add_to_result(key, next_item)
             i += 2
 
         else:
-            i += 1  # lewati jika tidak cocok pola
+            # Invalid key or no pair - skip
+            i += 1
 
     return result
 
