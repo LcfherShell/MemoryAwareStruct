@@ -215,7 +215,12 @@ def __main():
                 return frozenset(deep_struct_freeze(i, blacklist=blacklist, config_id=config_id) for i in obj)
 
             return obj
-
+    
+    import gc
+    def detect_gc_access():
+        refs = gc.get_referrers(memoryawarestruct)
+        if len(refs) > 100:  # batas toleransi
+            logger.critical("Too many GC referrers — possible introspection!")
 
     class memoryawarestruct(metaclass=SecureStructMeta):
         """
@@ -275,7 +280,7 @@ def __main():
             # Protected attributes - tidak bisa diubah dari luar
             object.__setattr__(self, "_config_id", __config_id)
             object.__setattr__(self, "_config", StructConfig.get_instance(__config_id))
-            object.__setattr__(self, "_original_entries", copy.deepcopy(entries))
+            object.__setattr__(self, "_original_entries", dict(entries))
             object.__setattr__(
                 self,
                 "_protected_attrs",
@@ -292,6 +297,7 @@ def __main():
                     "_attr_protection_enabled",
                     "_user_attributes",
                     "_dict_access_blocked",
+                    "_called_from_trusted_files",
                 },
             )
 
@@ -316,6 +322,8 @@ def __main():
                 if not key.startswith("_"):
                     self._internal_dict_update(key, value)
                     self._user_attributes.add(key)
+            detect_gc_access()
+            return
 
         def __dir__(self):
             return [
@@ -334,7 +342,7 @@ def __main():
                 "__repr__",
                 "__str__",
             ]
-
+        
         def _is_internal_call(self) -> bool:
             """Check if the call is coming from internal methods"""
             frame = inspect.currentframe()
@@ -378,7 +386,16 @@ def __main():
 
             # Define method blacklist
             protected_names = set([ name for name, obj in inspect.getmembers(self, inspect.ismethod)])
-
+            if callable(value):
+                def wrapper(*args, **kwargs):
+                    if getattr(wrapper, "_called", False):
+                        raise RuntimeError(f"Recursive call to '{key}' is blocked")
+                    wrapper._called = True
+                    try:
+                        return value(self, *args, **kwargs)
+                    finally:
+                        wrapper._called = False
+                value = wrapper
             # Sanitize key
             original_key = replace_special_chars(str(key))
 
@@ -538,6 +555,7 @@ def __main():
                             if not k.startswith("_")
                         }
                         return ReadOnlyDictView(user_attrs)
+                    raise AttributeError("Access to __dict__ is blocked for security reasons")
                 except AttributeError:
                     pass  # Ignore if attributes not yet initialized
 
@@ -592,7 +610,53 @@ def __main():
             raise AttributeError(
                 "Dictionary access denied: Dictionary-style deletion is completely blocked"
             )
+        # def __setstate__(self, state):
+        #     stack = inspect.stack()
+        #     for frame in stack[::-1]:  # dari paling bawah
+        #         filename = frame.filename
+        #         if filename.endswith(".py") and "__main__" in frame.frame.f_globals.get("__name__", ""):
+        #                 raise TypeError("Deserialization is not allowed for secure memoryawarestruct")
+        #     return super().__setstate__()
 
+        def __reduce__(self):
+            if not self._called_from_trusted_files():
+                raise TypeError("Pickling is not allowed")
+            return super().__reduce__()
+
+        def __reduce_ex__(self, protocol):
+            if not self._called_from_trusted_files():
+                raise TypeError("Pickling is not allowed (reduce_ex)")
+            return super().__reduce_ex__(protocol)
+        def __getstate__(self):
+            if not self._called_from_trusted_files():
+                raise TypeError("Pickling is not allowed (getstate)")
+            return super().__getstate__()
+
+        def __setstate__(self, state):
+            if not self._called_from_trusted_files():
+                raise TypeError("Unpickling is not allowed (setstate)")
+            return super().__setstate__(state)
+
+        def __deepcopy__(self, memo):
+            if not self._called_from_trusted_files():
+                raise TypeError("Deepcopy is not allowed")
+            return super().__deepcopy__(memo)
+        
+        def _called_from_trusted_files(self):
+            # Ambil file tempat class ini didefinisikan
+            this_file = os.path.abspath(__file__)
+            for frame in inspect.stack():
+                caller_file = frame.filename
+                if not caller_file: continue
+                caller_file = os.path.abspath(caller_file)
+                if caller_file != this_file and (
+                    "pickle" in caller_file or
+                    "copy.py" in caller_file or
+                    "copyreg.py" in caller_file
+                ):
+                    return False
+            return True
+        
         @property
         def config(self):
             """
@@ -769,7 +833,7 @@ def __main():
         def update_dict(self, dict_new:SelectType.Union_) -> None:
             if isinstance(dict_new, SelectType.Dict_):
                 public_attrs = {
-                    k: copy.deepcopy(v)
+                    k: v
                     for k, v in self.__dict__.items()
                     if not k.startswith("_")
                 }

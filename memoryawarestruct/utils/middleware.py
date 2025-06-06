@@ -308,11 +308,14 @@ def metaClass():
         wrapper._is_protected = True
         wrapper._original_func = func
         return wrapper
-
-
+    
     class SecureStructMeta(type):
         """Metaclass to secure Struct class"""
-
+        def __init__(cls, name, bases, namespace, **kwargs):
+            for base in bases:
+                if isinstance(base, SecureStructMeta):
+                    raise TypeError(f"Cannot subclass final class '{base.__name__}'")
+                
         def __new__(mcs, name, bases, namespace, **kwargs):
             # Daftar method dan atribut yang dilindungi
             protected_items = {

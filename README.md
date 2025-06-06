@@ -7,7 +7,6 @@ MemoryAwareStruct is a secure and protected data structure system with high-leve
 ## ✨ Key Features
 
 - 🛡️ **Attribute Protection**: Prevent direct modification of attributes from outside the class
-- 🔐 **Dictionary Protection**: Protect `__dict__` access with an authorization system
 - 🎯 **Method Registry**: Protect important methods from being overridden
 - 🔄 **Smart Conversion**: Automatic conversion of mixed lists to dictionaries
 - 💾 **Backup System**: Backup and restore system for data safety
@@ -293,7 +292,7 @@ print(f"Dictionary protection: {status['dict_protection']}")
 ### Working with Complex Data
 ```python
 # Smart list to dict conversion
-data = Struct("complex", 
+data = memory("complex", 
 users=[
 ["admin", {"role": "administrator", "active": True}],
 ["user1", {"role": "user", "active": False}]
@@ -313,7 +312,7 @@ MemoryAwareStruct provides a comprehensive solution for secure data structures w
 - 🛡️ **Multi-layer Protection**: Protection at attribute, method, and dictionary levels
 - 🔒 **Security First**: Security as the top priority with unsafe features disabled
 - 🎯 **Safe Operations**: Safe and intuitive API for data manipulation
-- 🏭 **Flexible Factory**: Struct creation with customizable configurations
+- 🏭 **Flexible Factory**: memory creation with customizable configurations
 - 💾 **Data Integrity**: Backup and restore system to maintain data integrity
 
 This library is ideal for applications that require data structures with high levels of security and strict access control.
